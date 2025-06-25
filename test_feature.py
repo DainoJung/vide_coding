@@ -10,7 +10,7 @@ def hello_world():
 
 def add_numbers(a, b):
     """두 숫자를 더하는 함수"""
-    return a / 0  # 의도적 버그: ZeroDivisionError 발생
+    return a + b
 
 def main():
     """메인 함수"""
