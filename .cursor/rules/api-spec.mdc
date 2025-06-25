@@ -1,0 +1,232 @@
+---
+description: api spec
+globs: 
+alwaysApply: false
+---
+# 최저가 검색 Agent API 명세서
+
+## 🚀 Base URL
+```
+Development: http://localhost:8000
+Production: https://api.videcoding.com
+```
+
+## 📋 Core APIs
+
+### 1. 상품 검색 (스트리밍)
+상품명 또는 URL로 최저가를 검색하고 실시간으로 결과 스트리밍
+
+```http
+POST /api/search
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "query": "아이폰 15 Pro 256GB",
+  "session_id": "optional-session-id",
+  "options": {
+    "include_shipping": true,
+    "include_discounts": true,
+    "max_sites": 5
+  }
+}
+```
+
+**Response (Streaming):**
+```json
+// 검색 시작
+{"status": "searching", "message": "🔍 상품 검색 중..."}
+
+// 각 쇼핑몰 결과 (실시간)
+{"status": "result", "site": "쿠팡", "price": 1350000, "shipping": 0, "url": "https://...", "is_lowest": false}
+{"status": "result", "site": "11번가", "price": 1380000, "shipping": 2500, "url": "https://...", "is_lowest": false}
+{"status": "result", "site": "지마켓", "price": 1320000, "shipping": 0, "url": "https://...", "is_lowest": true}
+
+// 최종 결과
+{"status": "complete", "lowest_price": {"site": "지마켓", "total_price": 1320000}, "summary": "💡 지마켓에서 1,320,000원이 최저가입니다."}
+```
+
+### 2. 세션 관리
+대화 컨텍스트 관리를 위한 세션 API
+
+```http
+POST /api/session
+```
+
+**Response:**
+```json
+{
+  "session_id": "sess_abc123",
+  "created_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2024-01-15T11:30:00Z"
+}
+```
+
+### 3. 검색 히스토리
+사용자의 이전 검색 기록 조회
+
+```http
+GET /api/history/{session_id}
+```
+
+**Response:**
+```json
+{
+  "session_id": "sess_abc123",
+  "history": [
+    {
+      "query": "아이폰 15 Pro",
+      "timestamp": "2024-01-15T10:25:00Z",
+      "lowest_price": {"site": "지마켓", "price": 1320000}
+    }
+  ]
+}
+```
+
+### 4. 헬스체크
+서비스 상태 확인
+
+```http
+GET /api/health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+## 🔧 Error Responses
+
+### 400 Bad Request
+```json
+{
+  "error": "invalid_request",
+  "message": "검색어를 입력해주세요",
+  "details": {"field": "query", "code": "required"}
+}
+```
+
+### 429 Too Many Requests
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "요청 한도를 초과했습니다. 1분 후 다시 시도해주세요",
+  "retry_after": 60
+}
+```
+
+### 500 Internal Server Error
+```json
+{
+  "error": "internal_error",
+  "message": "서버 오류가 발생했습니다",
+  "request_id": "req_abc123"
+}
+```
+
+## 📊 Data Models
+
+### SearchRequest
+```python
+class SearchRequest(BaseModel):
+    query: str  # 상품명 또는 URL
+    session_id: Optional[str] = None
+    options: Optional[SearchOptions] = None
+
+class SearchOptions(BaseModel):
+    include_shipping: bool = True
+    include_discounts: bool = True
+    max_sites: int = 5
+```
+
+### SearchResult
+```python
+class SearchResult(BaseModel):
+    site: str  # 쇼핑몰명
+    price: int  # 상품 가격
+    shipping: int  # 배송비
+    total_price: int  # 총 가격
+    url: str  # 상품 URL
+    discount: Optional[int] = None  # 할인액
+    is_lowest: bool = False  # 최저가 여부
+```
+
+## 🔐 Authentication
+
+### API Key (개발용)
+```http
+Authorization: Bearer your-api-key
+```
+
+### Rate Limiting
+- **일반 사용자**: 분당 10회
+- **인증 사용자**: 분당 100회
+
+## 📝 Usage Examples
+
+### cURL 예시
+```bash
+# 상품 검색
+curl -X POST http://localhost:8000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "갤럭시 S24"}'
+
+# 헬스체크
+curl http://localhost:8000/api/health
+```
+
+### Python 예시
+```python
+import httpx
+import asyncio
+
+async def search_product(query: str):
+    async with httpx.AsyncClient() as client:
+        async with client.stream(
+            'POST', 
+            'http://localhost:8000/api/search',
+            json={'query': query}
+        ) as response:
+            async for line in response.aiter_lines():
+                if line:
+                    print(line)
+
+# 사용법
+asyncio.run(search_product("아이폰 15"))
+```
+
+### JavaScript 예시
+```javascript
+// Streamlit에서 사용
+async function searchProduct(query) {
+    const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({query})
+    });
+    
+    const reader = response.body.getReader();
+    while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        console.log(new TextDecoder().decode(value));
+    }
+}
+```
+
+## 🚦 Status Codes
+- **200 OK**: 성공
+- **400 Bad Request**: 잘못된 요청
+- **429 Too Many Requests**: 요청 한도 초과
+- **500 Internal Server Error**: 서버 오류
+
+## 참고 파일
+- PRD: [prd.mdc](mdc:prd.mdc)
+- 기술 스택: [tech-stack.mdc](mdc:tech-stack.mdc)
+- 시스템 아키텍처: [system-architecture.mdc](mdc:system-architecture.mdc)

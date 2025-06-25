@@ -1,0 +1,317 @@
+---
+description: system architecture
+globs: 
+alwaysApply: false
+---
+# 최저가 검색 Agent 시스템 아키텍처
+
+## 🏗️ 전체 시스템 아키텍처
+
+```mermaid
+graph TB
+    subgraph "사용자 인터페이스 계층"
+        UI[웹 인터페이스]
+        Mobile[모바일 앱]
+        API_Gateway[API Gateway]
+    end
+    
+    subgraph "AI Agent 계층"
+        NLU[자연어 이해]
+        Context[대화 컨텍스트 관리]
+        Orchestra[검색 오케스트레이터]
+        Stream[스트리밍 응답 처리]
+    end
+    
+    subgraph "검색 엔진 계층"
+        SearchCoord[검색 코디네이터]
+        ParallelProc[병렬 처리 엔진]
+        ProductMatch[상품 매칭 알고리즘]
+        PriceCalc[가격 계산 엔진]
+    end
+    
+    subgraph "데이터 수집 계층"
+        CoupangAPI[쿠팡 API]
+        ElevenAPI[11번가 크롤러]
+        GmarketScraper[지마켓 스크래퍼]
+        NaverAPI[네이버쇼핑 API]
+        OtherSites[기타 쇼핑몰]
+    end
+    
+    subgraph "데이터 저장 계층"
+        Redis[Redis 캐시]
+        MongoDB[MongoDB]
+        SearchHistory[검색 히스토리]
+        UserProfile[사용자 프로필]
+    end
+    
+    subgraph "외부 서비스"
+        RateLimiter[Rate Limiter]
+        Monitor[모니터링]
+        Analytics[분석 서비스]
+    end
+    
+    %% 연결 관계
+    UI --> API_Gateway
+    Mobile --> API_Gateway
+    API_Gateway --> NLU
+    
+    NLU --> Context
+    NLU --> Orchestra
+    Context --> MongoDB
+    
+    Orchestra --> SearchCoord
+    Orchestra --> Stream
+    Stream --> API_Gateway
+    
+    SearchCoord --> ParallelProc
+    ParallelProc --> ProductMatch
+    ParallelProc --> PriceCalc
+    
+    ProductMatch --> CoupangAPI
+    ProductMatch --> ElevenAPI
+    ProductMatch --> GmarketScraper
+    ProductMatch --> NaverAPI
+    ProductMatch --> OtherSites
+    
+    PriceCalc --> Redis
+    Context --> Redis
+    SearchCoord --> SearchHistory
+    NLU --> UserProfile
+    
+    API_Gateway --> RateLimiter
+    Orchestra --> Monitor
+    ParallelProc --> Analytics
+```
+
+## 🔄 데이터 플로우 아키텍처
+
+```mermaid
+sequenceDiagram
+    participant User as 사용자
+    participant UI as 웹 인터페이스
+    participant Gateway as API Gateway
+    participant Agent as AI Agent
+    participant Search as 검색 엔진
+    participant Sites as 쇼핑몰들
+    participant Cache as Redis 캐시
+    participant DB as MongoDB
+    
+    User->>UI: 상품 검색 요청
+    UI->>Gateway: API 호출
+    Gateway->>Agent: NLU 처리 요청
+    
+    Agent->>DB: 대화 컨텍스트 조회
+    Agent->>Cache: 캐시된 결과 확인
+    
+    alt 캐시된 결과 없음
+        Agent->>Search: 병렬 검색 시작
+        
+        par 병렬 검색
+            Search->>Sites: 쿠팡 검색
+            Search->>Sites: 11번가 검색  
+            Search->>Sites: 지마켓 검색
+            Search->>Sites: 네이버쇼핑 검색
+        end
+        
+        Sites-->>Search: 상품 정보 응답
+        Search->>Search: 상품 매칭 & 가격 계산
+        Search->>Cache: 결과 캐싱
+    end
+    
+    Search-->>Agent: 검색 결과
+    Agent->>Gateway: 스트리밍 응답
+    Gateway-->>UI: 실시간 결과 전송
+    UI-->>User: 사용자에게 표시
+    
+    Agent->>DB: 검색 히스토리 저장
+```
+
+## 🏛️ 마이크로서비스 아키텍처
+
+```mermaid
+graph LR
+    subgraph "Frontend Services"
+        WebApp[웹 애플리케이션]
+        MobileApp[모바일 앱]
+    end
+    
+    subgraph "API Gateway & Authentication"
+        Gateway[API Gateway]
+        Auth[인증 서비스]
+        RateLimit[Rate Limiting]
+    end
+    
+    subgraph "Core AI Services"
+        NLPService[NLP 서비스]
+        ContextService[컨텍스트 서비스]
+        StreamService[스트리밍 서비스]
+    end
+    
+    subgraph "Search Services"
+        SearchOrch[검색 오케스트레이터]
+        ProductService[상품 매칭 서비스]
+        PriceService[가격 계산 서비스]
+    end
+    
+    subgraph "Data Collection Services"
+        CoupangService[쿠팡 수집기]
+        ElevenService[11번가 수집기]
+        GmarketService[지마켓 수집기]
+        NaverService[네이버 수집기]
+    end
+    
+    subgraph "Data & Cache Layer"
+        RedisCluster[Redis Cluster]
+        MongoCluster[MongoDB Cluster]
+        ElasticSearch[검색 인덱스]
+    end
+    
+    subgraph "Infrastructure"
+        LoadBalancer[로드 밸런서]
+        MessageQueue[메시지 큐]
+        Monitoring[모니터링]
+    end
+    
+    %% 연결
+    WebApp --> LoadBalancer
+    MobileApp --> LoadBalancer
+    LoadBalancer --> Gateway
+    Gateway --> Auth
+    Gateway --> RateLimit
+    
+    Gateway --> NLPService
+    Gateway --> StreamService
+    NLPService --> ContextService
+    
+    ContextService --> SearchOrch
+    SearchOrch --> ProductService
+    SearchOrch --> PriceService
+    
+    ProductService --> CoupangService
+    ProductService --> ElevenService  
+    ProductService --> GmarketService
+    ProductService --> NaverService
+    
+    PriceService --> RedisCluster
+    ContextService --> MongoCluster
+    ProductService --> ElasticSearch
+    
+    SearchOrch --> MessageQueue
+    MessageQueue --> Monitoring
+```
+
+## 🗄️ 데이터베이스 설계
+
+```mermaid
+erDiagram
+    User {
+        string user_id PK
+        string name
+        string email
+        json preferences
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SearchSession {
+        string session_id PK
+        string user_id FK
+        json conversation_history
+        datetime created_at
+        datetime expires_at
+    }
+    
+    SearchHistory {
+        string history_id PK
+        string user_id FK
+        string session_id FK
+        string query
+        json search_results
+        datetime searched_at
+    }
+    
+    Product {
+        string product_id PK
+        string name
+        string brand
+        string category
+        json specifications
+        datetime created_at
+    }
+    
+    PriceData {
+        string price_id PK
+        string product_id FK
+        string site_name
+        decimal price
+        decimal shipping_cost
+        json discounts
+        string product_url
+        datetime collected_at
+    }
+    
+    Cache {
+        string cache_key PK
+        json data
+        datetime expires_at
+    }
+    
+    User ||--o{ SearchSession : creates
+    User ||--o{ SearchHistory : has
+    SearchSession ||--o{ SearchHistory : contains
+    Product ||--o{ PriceData : has_prices
+```
+
+## 🔧 기술 스택 및 구성 요소
+
+### Frontend
+- **웹**: React.js + TypeScript + TailwindCSS
+- **모바일**: React Native 또는 Flutter
+- **상태 관리**: Redux Toolkit / Zustand
+- **실시간 통신**: WebSocket / Server-Sent Events
+
+### Backend Services
+- **API Gateway**: Kong 또는 AWS API Gateway
+- **마이크로서비스**: Node.js + Express / Python + FastAPI
+- **AI/NLP**: Python + Transformers + OpenAI API
+- **검색 엔진**: Elasticsearch + Redis
+
+### Data Layer
+- **캐시**: Redis Cluster (세션, 검색 결과)
+- **주 데이터베이스**: MongoDB (사용자, 히스토리)
+- **검색 인덱스**: Elasticsearch (상품 정보)
+- **메시지 큐**: RabbitMQ / Apache Kafka
+
+### Infrastructure
+- **컨테이너**: Docker + Kubernetes
+- **CI/CD**: GitHub Actions / Jenkins
+- **모니터링**: Prometheus + Grafana
+- **로그**: ELK Stack (Elasticsearch, Logstash, Kibana)
+
+### External Services  
+- **쇼핑몰 API**: 각 쇼핑몰 공식 API
+- **웹 스크래핑**: Playwright / Selenium
+- **클라우드**: AWS / Google Cloud Platform
+
+## 🚀 확장성 및 성능 고려사항
+
+### 수평 확장
+- **로드 밸런싱**: 트래픽 분산 처리
+- **오토 스케일링**: 부하에 따른 자동 확장
+- **CDN**: 정적 리소스 전역 배포
+
+### 성능 최적화
+- **캐싱 전략**: 다층 캐시 구조
+- **병렬 처리**: 비동기 멀티스레딩
+- **데이터 압축**: 응답 데이터 최적화
+
+### 장애 대응
+- **Circuit Breaker**: 장애 전파 방지
+- **Retry 로직**: 일시적 장애 대응
+- **Fallback**: 대체 서비스 제공
+
+## 참고 파일
+- PRD: [prd.mdc](mdc:prd.mdc)
+- 와이어프레임: [wireframe.md](mdc:docs/wireframe.md)
+- 문제 정의: [problem-definition.mdc](mdc:problem-definition.mdc)
+- 사용자 시나리오: [user-scenarios.mdc](mdc:user-scenarios.mdc)

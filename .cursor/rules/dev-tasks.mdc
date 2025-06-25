@@ -1,0 +1,116 @@
+---
+description: dev tasks
+globs: 
+alwaysApply: false
+---
+# 최저가 검색 Agent 프로토타입 개발 Task
+
+## 🎯 MVP 목표
+기본적인 상품 검색과 가격 비교가 가능한 동작하는 프로토타입 개발
+
+## 📋 개발 Task Table
+
+| Task ID | Title | Description | Status | Dependencies | Priority | Details | Test Strategy |
+|---------|-------|-------------|--------|--------------|----------|---------|---------------|
+| **T001** | **프로젝트 초기 설정** | 기본 프로젝트 구조 생성 및 환경 설정 | 🔴 TODO | - | 🔴 Critical | Python 3.11, 폴더 구조 생성, .gitignore, requirements.txt | 프로젝트 구조 검증, 의존성 설치 테스트 |
+| **T002** | **FastAPI 기본 서버** | 기본 FastAPI 앱 및 헬스체크 API 구현 | 🔴 TODO | T001 | 🔴 Critical | main.py, health endpoint, CORS 설정 | curl로 헬스체크 API 호출 테스트 |
+| **T003** | **Streamlit 기본 UI** | 기본 검색 입력 화면 구현 | 🔴 TODO | T001 | 🔴 Critical | main.py, 검색 입력창, 기본 레이아웃 | 수동 UI 테스트, 입력 검증 |
+| **T004** | **기본 데이터 모델** | 검색 요청/응답 Pydantic 모델 정의 | 🔴 TODO | T002 | 🟡 High | SearchRequest, SearchResult 스키마 | 스키마 검증 단위 테스트 |
+| **T005** | **단일 쇼핑몰 스크래퍼** | 쿠팡 기본 스크래퍼 구현 | 🔴 TODO | T004 | 🟡 High | BeautifulSoup 기반, 기본 상품 검색 | 실제 상품 검색 테스트, 파싱 검증 |
+| **T006** | **검색 API 엔드포인트** | /api/search 기본 구현 (동기 방식) | 🔴 TODO | T002, T004, T005 | 🟡 High | 단일 쇼핑몰 검색, JSON 응답 | API 테스트, 응답 형식 검증 |
+| **T007** | **UI-API 연동** | Streamlit에서 FastAPI 호출 연동 | 🔴 TODO | T003, T006 | 🟡 High | httpx 클라이언트, 결과 표시 | E2E 검색 플로우 테스트 |
+| **T008** | **에러 처리** | 기본 예외 처리 및 에러 응답 구현 | 🔴 TODO | T006 | 🟢 Medium | 400, 500 에러 처리, 로깅 | 에러 케이스별 응답 테스트 |
+| **T009** | **두 번째 쇼핑몰 추가** | 지마켓 스크래퍼 추가 및 가격 비교 | 🔴 TODO | T005 | 🟢 Medium | 지마켓 스크래퍼, 가격 비교 로직 | 두 쇼핑몰 결과 비교 테스트 |
+| **T010** | **스트리밍 응답 기초** | 기본적인 스트리밍 응답 구현 | 🔴 TODO | T006 | 🟢 Medium | StreamingResponse, 진행 상황 표시 | 스트리밍 데이터 수신 테스트 |
+| **T011** | **환경 설정 관리** | 환경 변수 및 설정 파일 관리 | 🔴 TODO | T001 | 🟢 Medium | .env, settings.py, 기본값 설정 | 환경별 설정 로드 테스트 |
+| **T012** | **기본 로깅** | 애플리케이션 로깅 시스템 구현 | 🔴 TODO | T002 | 🔵 Low | 로그 포맷, 파일 출력, 레벨 설정 | 로그 출력 및 파일 저장 검증 |
+| **T013** | **Docker 컨테이너화** | 기본 Docker 설정 및 컨테이너 실행 | 🔴 TODO | T007 | 🔵 Low | Dockerfile, docker-compose.yml | 컨테이너 빌드 및 실행 테스트 |
+| **T014** | **기본 테스트 케이스** | 핵심 기능 단위 테스트 작성 | 🔴 TODO | T007 | 🔵 Low | pytest 설정, API/스크래퍼 테스트 | 테스트 실행 및 커버리지 확인 |
+| **T015** | **프로토타입 배포** | 로컬 배포 및 데모 준비 | 🔴 TODO | T010, T013 | 🔵 Low | 배포 스크립트, README 작성 | 전체 시스템 통합 테스트 |
+
+## 🔄 개발 단계별 분류
+
+### Phase 1: 기본 인프라 (T001-T003)
+- 프로젝트 구조 및 기본 서버/UI 설정
+- **목표**: 기본 개발 환경 구축
+
+### Phase 2: 핵심 기능 (T004-T007)
+- 데이터 모델, 스크래퍼, API 연동
+- **목표**: 기본적인 상품 검색 기능 완성
+
+### Phase 3: 기능 확장 (T008-T010)
+- 에러 처리, 추가 쇼핑몰, 스트리밍
+- **목표**: 실용적인 프로토타입 완성
+
+### Phase 4: 운영 준비 (T011-T015)
+- 설정 관리, 로깅, 테스트, 배포
+- **목표**: 데모 가능한 수준의 안정성 확보
+
+## 🎯 완료 기준
+
+### 프로토타입 성공 기준
+1. ✅ **기본 검색**: 상품명 입력 시 2개 쇼핑몰에서 가격 조회
+2. ✅ **가격 비교**: 최저가 표시 및 가격 정렬
+3. ✅ **UI 연동**: Streamlit에서 직관적인 검색 및 결과 표시
+4. ✅ **에러 처리**: 기본적인 예외 상황 처리
+5. ✅ **응답 속도**: 30초 이내 검색 완료
+
+### 기술적 완료 기준
+- FastAPI 서버 정상 동작
+- Streamlit UI 정상 동작
+- 2개 쇼핑몰 스크래퍼 동작
+- 기본 API 엔드포인트 (/health, /search) 동작
+- Docker 컨테이너 실행 가능
+
+## 🛠️ 핵심 기술 스택 (단순화)
+
+### 필수 기술
+```python
+# 최소 requirements.txt
+fastapi==0.104.1
+streamlit==1.28.1
+uvicorn==0.24.0
+pydantic==2.5.0
+httpx==0.25.1
+beautifulsoup4==4.12.2
+```
+
+### 디렉토리 구조 (단순화)
+```
+videcoding/
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI 앱
+│   │   ├── models.py        # Pydantic 모델
+│   │   ├── scrapers.py      # 스크래퍼 구현
+│   │   └── config.py        # 설정 관리
+│   ├── requirements.txt     # 백엔드 의존성
+│   └── Dockerfile
+├── frontend/
+│   ├── app.py              # Streamlit 앱
+│   ├── requirements.txt    # 프론트엔드 의존성
+│   └── Dockerfile
+├── docker-compose.yml      # 전체 서비스
+└── README.md              # 실행 가이드
+```
+
+## 📊 진행 상황 추적
+
+### 상태 표시
+- 🔴 **TODO**: 시작하지 않음
+- 🟡 **IN_PROGRESS**: 진행 중
+- 🟢 **TESTING**: 테스트 중
+- ✅ **DONE**: 완료
+- ❌ **BLOCKED**: 블로킹됨
+
+### 우선순위
+- 🔴 **Critical**: 즉시 처리 필요
+- 🟡 **High**: 높은 우선순위
+- 🟢 **Medium**: 중간 우선순위
+- 🔵 **Low**: 낮은 우선순위
+
+## 참고 파일
+- PRD: [prd.mdc](mdc:prd.mdc)
+- 기술 스택: [tech-stack.mdc](mdc:tech-stack.mdc)
+- API 명세서: [api-spec.mdc](mdc:api-spec.mdc)
+- 프로젝트 구조: [project-structure.mdc](mdc:project-structure.mdc)

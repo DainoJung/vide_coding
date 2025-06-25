@@ -1,0 +1,326 @@
+---
+description: tech stack
+globs: 
+alwaysApply: false
+---
+# 최저가 검색 Agent 기술 스택
+
+## 🔧 핵심 기술 스택
+
+### 언어 및 런타임
+- **Python**: 3.11 (최신 성능 최적화 및 타입 힌팅 지원)
+- **패키지 관리**: Poetry 또는 pip + requirements.txt
+
+### Frontend
+- **Streamlit**: 대화형 웹 인터페이스
+  - 실시간 스트리밍 표시 지원
+  - 간단한 배포 및 프로토타이핑
+  - 상태 관리를 통한 대화 컨텍스트 유지
+
+### Backend API
+- **FastAPI**: RESTful API 서버
+  - 자동 API 문서 생성 (OpenAPI/Swagger)
+  - 비동기 처리 지원으로 병렬 검색 최적화
+  - Pydantic을 통한 데이터 검증
+
+### AI Agent Framework
+- **LangGraph**: 대화형 Agent 구현
+  - 상태 관리 및 워크플로우 제어
+  - **로컬 메모리 모듈** 사용으로 대화 컨텍스트 기억
+  - 노드 기반 Agent 구성으로 확장성 확보
+
+### 모니터링 및 추적
+- **LangSmith**: Agent 성능 모니터링
+  - 대화 플로우 추적
+  - 디버깅 및 성능 분석
+  - Agent 품질 개선을 위한 인사이트 제공
+
+### LLM (Large Language Model)
+- **Gemini 2.5 Flash Preview (05-20)**: 주 언어 모델
+  - 빠른 응답 속도 (Flash 최적화)
+  - 한국어 지원 우수
+  - 멀티모달 기능 지원
+
+### Tools & Integrations
+- **MCP (Model Context Protocol)**: 도구 연동 프로토콜
+  - 표준화된 도구 인터페이스
+  - 확장 가능한 도구 생태계
+
+### 검색 도구
+- **DuckDuckGo Search MCP**: 웹 검색 기능
+  - 프라이버시 보호 검색
+  - 쇼핑몰 정보 보조 검색
+  - 상품 관련 정보 수집
+
+## 🏗️ 아키텍처 구성
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        ST[Streamlit UI]
+    end
+    
+    subgraph "API Layer"
+        API[FastAPI Server]
+        Auth[인증 미들웨어]
+    end
+    
+    subgraph "AI Agent Layer"
+        LG[LangGraph Agent]
+        Memory[로컬 메모리 모듈]
+        LLM[Gemini 2.5 Flash]
+    end
+    
+    subgraph "Tools Layer"
+        MCP[MCP Protocol]
+        DDG[DuckDuckGo MCP]
+        Shopping[쇼핑몰 크롤러]
+    end
+    
+    subgraph "Monitoring"
+        LS[LangSmith]
+    end
+    
+    ST --> API
+    API --> Auth
+    Auth --> LG
+    LG --> Memory
+    LG --> LLM
+    LG --> MCP
+    MCP --> DDG
+    MCP --> Shopping
+    LG --> LS
+```
+
+## 📦 주요 Python 패키지
+
+### Core Dependencies
+```python
+# requirements.txt 예시
+fastapi==0.104.1
+streamlit==1.28.1
+langgraph==0.0.40
+langsmith==0.0.64
+google-generativeai==0.3.1  # Gemini API
+uvicorn==0.24.0  # ASGI 서버
+pydantic==2.5.0
+```
+
+### 검색 및 크롤링
+```python
+httpx==0.25.1  # 비동기 HTTP 클라이언트
+beautifulsoup4==4.12.2  # HTML 파싱
+playwright==1.40.0  # 브라우저 자동화
+```
+
+### 데이터 처리
+```python
+pandas==2.1.3  # 데이터 처리
+numpy==1.25.2  # 수치 계산
+```
+
+### MCP Tools
+```python
+mcp==0.1.0  # MCP 클라이언트
+duckduckgo-mcp==0.1.0  # DuckDuckGo 검색 도구
+```
+
+## 🔄 구현 아키텍처
+
+### 1. Streamlit Frontend
+```python
+# app.py
+import streamlit as st
+from typing import AsyncGenerator
+
+async def stream_search_results(query: str) -> AsyncGenerator[str, None]:
+    """실시간 검색 결과 스트리밍"""
+    async with httpx.AsyncClient() as client:
+        async with client.stream('POST', '/api/search', json={'query': query}) as response:
+            async for chunk in response.aiter_text():
+                yield chunk
+
+# 스트리밍 결과 표시
+if user_input := st.chat_input("상품명 또는 URL을 입력하세요"):
+    with st.chat_message("assistant"):
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        async for chunk in stream_search_results(user_input):
+            full_response += chunk
+            response_placeholder.write(full_response)
+```
+
+### 2. FastAPI Backend
+```python
+# main.py
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from langgraph import StateGraph
+
+app = FastAPI()
+
+@app.post("/api/search")
+async def search_products(request: SearchRequest):
+    """상품 검색 API with 스트리밍 응답"""
+    
+    async def generate_response():
+        # LangGraph Agent 실행
+        agent = create_search_agent()
+        
+        async for step in agent.astream({"query": request.query}):
+            yield f"data: {json.dumps(step)}\n\n"
+    
+    return StreamingResponse(generate_response(), media_type="text/plain")
+```
+
+### 3. LangGraph Agent
+```python
+# agent.py
+from langgraph import StateGraph
+from langgraph.memory import MemorySaver  # 로컬 메모리 모듈
+
+class SearchState(TypedDict):
+    query: str
+    search_results: List[dict]
+    conversation_history: List[dict]
+
+def create_search_agent():
+    # 로컬 메모리 설정
+    memory = MemorySaver()
+    
+    # Agent 워크플로우 정의
+    workflow = StateGraph(SearchState)
+    
+    # 노드 정의
+    workflow.add_node("parse_query", parse_user_query)
+    workflow.add_node("search_parallel", search_shopping_malls)
+    workflow.add_node("calculate_prices", calculate_best_prices)
+    workflow.add_node("format_response", format_final_response)
+    
+    # 엣지 연결
+    workflow.add_edge("parse_query", "search_parallel")
+    workflow.add_edge("search_parallel", "calculate_prices")
+    workflow.add_edge("calculate_prices", "format_response")
+    
+    # 메모리 적용
+    return workflow.compile(checkpointer=memory)
+```
+
+### 4. MCP Tools Integration
+```python
+# tools/mcp_client.py
+from mcp import ClientSession
+from mcp.client.stdio import StdioServerParameters
+
+async def setup_mcp_tools():
+    """MCP 도구들 설정"""
+    
+    # DuckDuckGo 검색 도구
+    ddg_params = StdioServerParameters(
+        command="python",
+        args=["-m", "duckduckgo_mcp"]
+    )
+    
+    async with ClientSession(ddg_params) as session:
+        # 도구 목록 가져오기
+        tools = await session.list_tools()
+        return tools
+
+# Agent에서 도구 사용
+async def search_with_ddg(query: str):
+    tools = await setup_mcp_tools()
+    result = await tools["duckduckgo_search"].call({"query": query})
+    return result
+```
+
+## 🚀 배포 및 실행
+
+### 개발 환경 실행
+```bash
+# 1. 의존성 설치
+pip install -r requirements.txt
+
+# 2. FastAPI 서버 실행
+uvicorn main:app --reload --port 8000
+
+# 3. Streamlit 앱 실행 (새 터미널)
+streamlit run app.py --server.port 8501
+```
+
+### 프로덕션 배포
+```dockerfile
+# Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+# FastAPI와 Streamlit 동시 실행
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 & streamlit run app.py --server.port 8501 --server.address 0.0.0.0"]
+```
+
+## 📊 성능 최적화
+
+### 비동기 처리
+- FastAPI의 async/await로 병렬 쇼핑몰 검색
+- LangGraph의 비동기 노드 실행
+- Streamlit의 스트리밍 응답 지원
+
+### 메모리 관리
+- LangGraph 로컬 메모리로 대화 컨텍스트 유지
+- 세션별 메모리 격리
+- 자동 메모리 정리 (TTL 설정)
+
+### 캐싱 전략
+```python
+from functools import lru_cache
+import asyncio
+
+@lru_cache(maxsize=100)
+async def cached_product_search(product_name: str, site: str):
+    """상품 검색 결과 캐싱 (5분)"""
+    # 캐시 만료 시간 설정
+    await asyncio.sleep(0)  # 비동기 캐싱 로직
+    return search_result
+```
+
+## 🔧 환경 설정
+
+### 환경 변수
+```bash
+# .env
+GEMINI_API_KEY=your_gemini_api_key
+LANGSMITH_API_KEY=your_langsmith_key
+LANGSMITH_PROJECT=price-search-agent
+
+# 쇼핑몰 API 키들
+COUPANG_API_KEY=your_coupang_key
+NAVER_CLIENT_ID=your_naver_id
+NAVER_CLIENT_SECRET=your_naver_secret
+```
+
+### 설정 관리
+```python
+# config.py
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    gemini_api_key: str
+    langsmith_api_key: str
+    langsmith_project: str = "price-search-agent"
+    
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
+
+## 참고 파일
+- 시스템 아키텍처: [system-architecture.mdc](mdc:system-architecture.mdc)
+- PRD: [prd.mdc](mdc:prd.mdc)
+- 와이어프레임: [wireframe.md](mdc:docs/wireframe.md)
+- 문제 정의: [problem-definition.mdc](mdc:problem-definition.mdc)

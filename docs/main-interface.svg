@@ -1,0 +1,54 @@
+<svg width="400" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 배경 -->
+  <rect width="400" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  
+  <!-- 헤더 -->
+  <rect x="0" y="0" width="400" height="80" fill="#007bff" stroke="#0056b3"/>
+  <text x="200" y="45" text-anchor="middle" fill="white" font-size="20" font-weight="bold">최저가 검색 Agent</text>
+  
+  <!-- 검색 영역 -->
+  <rect x="20" y="100" width="360" height="120" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="30" y="125" fill="#6c757d" font-size="14">상품 URL 또는 상품명 입력</text>
+  
+  <!-- 입력 필드 -->
+  <rect x="30" y="135" width="280" height="40" fill="#ffffff" stroke="#ced4da" stroke-width="1" rx="4"/>
+  <text x="40" y="158" fill="#495057" font-size="12">아이폰 15 Pro 256GB 최저가 알려줘</text>
+  
+  <!-- 검색 버튼 -->
+  <rect x="320" y="135" width="50" height="40" fill="#28a745" stroke="#1e7e34" rx="4"/>
+  <text x="345" y="158" text-anchor="middle" fill="white" font-size="12">검색</text>
+  
+  <!-- 검색 옵션 -->
+  <text x="30" y="200" fill="#6c757d" font-size="12">☑ 배송비 포함  ☑ 할인 적용  ☑ 적립금 계산</text>
+  
+  <!-- 결과 영역 -->
+  <rect x="20" y="240" width="360" height="320" fill="white" stroke="#dee2e6" stroke-width="1" rx="8"/>
+  <text x="30" y="265" fill="#495057" font-size="16" font-weight="bold">🔍 검색 결과</text>
+  
+  <!-- 스트리밍 진행 상황 -->
+  <rect x="30" y="280" width="340" height="30" fill="#e3f2fd" stroke="#bbdefb" rx="4"/>
+  <text x="40" y="298" fill="#1976d2" font-size="12">🔍 쿠팡 검색 중...</text>
+  
+  <!-- 결과 카드 1 -->
+  <rect x="30" y="320" width="340" height="60" fill="#f8f9fa" stroke="#dee2e6" rx="4"/>
+  <circle cx="50" cy="340" r="8" fill="#28a745"/>
+  <text x="70" y="335" fill="#495057" font-size="14" font-weight="bold">쿠팡</text>
+  <text x="70" y="350" fill="#495057" font-size="12">1,350,000원 (무료배송)</text>
+  <text x="300" y="345" fill="#28a745" font-size="12" font-weight="bold">⭐ 최저가</text>
+  
+  <!-- 결과 카드 2 -->
+  <rect x="30" y="390" width="340" height="60" fill="#f8f9fa" stroke="#dee2e6" rx="4"/>
+  <circle cx="50" cy="410" r="8" fill="#6c757d"/>
+  <text x="70" y="405" fill="#495057" font-size="14" font-weight="bold">11번가</text>
+  <text x="70" y="420" fill="#495057" font-size="12">1,380,000원 (배송비 2,500원)</text>
+  
+  <!-- 결과 카드 3 -->
+  <rect x="30" y="460" width="340" height="60" fill="#f8f9fa" stroke="#dee2e6" rx="4"/>
+  <circle cx="50" cy="480" r="8" fill="#6c757d"/>
+  <text x="70" y="475" fill="#495057" font-size="14" font-weight="bold">지마켓</text>
+  <text x="70" y="490" fill="#495057" font-size="12">1,365,000원 (무료배송)</text>
+  
+  <!-- 하단 액션 -->
+  <rect x="20" y="540" width="360" height="40" fill="#007bff" stroke="#0056b3" rx="6"/>
+  <text x="200" y="563" text-anchor="middle" fill="white" font-size="14">🛒 최저가 구매하기</text>
+</svg> 
