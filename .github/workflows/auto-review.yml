@@ -1,0 +1,105 @@
+name: 자동 코드 리뷰
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 코드 변경사항 분석
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const prNumber = context.issue.number;
+          
+          // PR의 변경된 파일들 가져오기
+          const files = await github.rest.pulls.listFiles({
+            owner,
+            repo,
+            pull_number: prNumber
+          });
+          
+          let reviewComments = [];
+          let overallRating = '👍';
+          let suggestions = [];
+          
+          // 각 파일별 분석
+          for (const file of files.data) {
+            const filename = file.filename;
+            const additions = file.additions;
+            const deletions = file.deletions;
+            const changes = file.changes;
+            
+            // Python 파일 분석
+            if (filename.endsWith('.py')) {
+              if (changes > 100) {
+                suggestions.push(`📄 **${filename}**: 파일이 크게 변경되었습니다 (${changes}줄). 가능하면 더 작은 단위로 나누어 리뷰하는 것을 고려해보세요.`);
+              }
+              
+              if (filename.includes('test_')) {
+                suggestions.push(`🧪 **${filename}**: 테스트 파일이 추가/수정되었습니다. 좋습니다!`);
+              }
+              
+              // 특정 패턴 검사 (파일 내용은 실제로는 API로 가져와야 함)
+              suggestions.push(`🐍 **${filename}**: Python 코드 스타일 가이드(PEP 8)를 확인해주세요.`);
+            }
+            
+            // 문서 파일 분석
+            if (filename.endsWith('.md')) {
+              suggestions.push(`📚 **${filename}**: 문서 업데이트가 있습니다. 링크와 형식을 확인해주세요.`);
+            }
+            
+            // 설정 파일 분석
+            if (filename.includes('yml') || filename.includes('yaml') || filename.includes('json')) {
+              suggestions.push(`⚙️ **${filename}**: 설정 파일이 변경되었습니다. 문법과 구조를 검토해주세요.`);
+            }
+          }
+          
+          // 전체 PR 분석
+          const totalChanges = files.data.reduce((sum, file) => sum + file.changes, 0);
+          
+          if (totalChanges > 500) {
+            overallRating = '⚠️';
+            suggestions.unshift('**대규모 변경사항**: 이 PR은 매우 큰 변경사항을 포함하고 있습니다. 여러 개의 작은 PR로 나누는 것을 고려해보세요.');
+          } else if (totalChanges > 200) {
+            overallRating = '🔍';
+            suggestions.unshift('**중간 규모 변경사항**: 이 PR은 중간 규모의 변경사항을 포함하고 있습니다. 각 변경사항을 주의깊게 검토해주세요.');
+          }
+          
+          // 자동 리뷰 댓글 생성
+          const reviewComment = `## 🤖 자동 코드 리뷰 ${overallRating}
+
+          **총 변경사항**: ${totalChanges}줄 (${files.data.length}개 파일)
+
+          ### 📋 리뷰 포인트
+          ${suggestions.length > 0 ? suggestions.map(s => `- ${s}`).join('\n') : '- 특별한 검토 사항이 없습니다.'}
+
+          ### 🔍 추가 확인사항
+          - [ ] 코드가 기존 스타일과 일치하는가?
+          - [ ] 테스트가 충분히 커버하는가?
+          - [ ] 성능에 영향을 주는 변경사항이 있는가?
+          - [ ] 보안 이슈가 있는가?
+          - [ ] 문서 업데이트가 필요한가?
+
+          ### 💡 팁
+          - 변경사항이 클 경우, 커밋을 논리적 단위로 나누어 보세요
+          - 테스트 코드 추가를 고려해보세요
+          - 코드 주석을 적절히 활용해보세요
+
+          *이 리뷰는 자동으로 생성되었습니다. 실제 코드 내용은 사람이 직접 검토해야 합니다.*`;
+
+          // 리뷰 댓글 등록
+          await github.rest.pulls.createReview({
+            owner,
+            repo,
+            pull_number: prNumber,
+            body: reviewComment,
+            event: 'COMMENT'
+          }); 

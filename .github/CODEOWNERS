@@ -1,0 +1,21 @@
+# 전역 코드 소유자
+* @DainoJung
+
+# Python 파일
+*.py @DainoJung
+
+# 문서 파일
+*.md @DainoJung
+docs/ @DainoJung
+
+# GitHub 설정 파일
+.github/ @DainoJung
+
+# 설정 파일들
+*.yml @DainoJung
+*.yaml @DainoJung
+*.json @DainoJung
+.gitignore @DainoJung
+
+# 커서 규칙 파일
+.cursor/ @DainoJung 

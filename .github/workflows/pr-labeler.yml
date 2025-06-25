@@ -1,0 +1,113 @@
+name: PR 자동 라벨링 및 할당
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    steps:
+    - name: PR 자동 라벨링
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const prNumber = context.issue.number;
+          const pr = context.payload.pull_request;
+          
+          // PR 제목을 기반으로 라벨 결정
+          const title = pr.title.toLowerCase();
+          const labels = [];
+          
+          // 커밋 메시지 기반 라벨링
+          if (title.includes('feat:') || title.includes('feature:')) {
+            labels.push('enhancement', 'feature');
+          } else if (title.includes('fix:') || title.includes('bug:')) {
+            labels.push('bug', 'fix');
+          } else if (title.includes('docs:') || title.includes('doc:')) {
+            labels.push('documentation');
+          } else if (title.includes('test:')) {
+            labels.push('testing');
+          } else if (title.includes('refactor:')) {
+            labels.push('refactoring');
+          } else if (title.includes('style:')) {
+            labels.push('style');
+          } else if (title.includes('chore:')) {
+            labels.push('maintenance');
+          }
+          
+          // PR 크기 기반 라벨링
+          const files = await github.rest.pulls.listFiles({
+            owner,
+            repo,
+            pull_number: prNumber
+          });
+          
+          const changedFiles = files.data.length;
+          const additions = pr.additions;
+          
+          if (changedFiles <= 3 && additions <= 50) {
+            labels.push('size/small');
+          } else if (changedFiles <= 10 && additions <= 200) {
+            labels.push('size/medium');
+          } else {
+            labels.push('size/large');
+          }
+          
+          // 우선순위 라벨링 (특정 키워드 기반)
+          if (title.includes('urgent') || title.includes('critical') || title.includes('hotfix')) {
+            labels.push('priority/high');
+          } else if (title.includes('minor') || title.includes('cleanup')) {
+            labels.push('priority/low');
+          } else {
+            labels.push('priority/medium');
+          }
+          
+          // 라벨 적용
+          if (labels.length > 0) {
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: prNumber,
+              labels: labels
+            });
+          }
+
+  assigner:
+    runs-on: ubuntu-latest
+    steps:
+    - name: PR 자동 할당
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const prNumber = context.issue.number;
+          const pr = context.payload.pull_request;
+          
+          // PR 작성자를 담당자로 할당
+          const author = pr.user.login;
+          
+          // 기본 리뷰어 목록 (프로젝트 관리자들)
+          const defaultReviewers = ['DainoJung']; // 실제 GitHub 사용자명으로 변경
+          
+          // 작성자가 아닌 리뷰어들만 필터링
+          const reviewers = defaultReviewers.filter(reviewer => reviewer !== author);
+          
+          // 담당자 할당 (PR 작성자)
+          await github.rest.issues.addAssignees({
+            owner,
+            repo,
+            issue_number: prNumber,
+            assignees: [author]
+          });
+          
+          // 리뷰어 요청
+          if (reviewers.length > 0) {
+            await github.rest.pulls.requestReviewers({
+              owner,
+              repo,
+              pull_number: prNumber,
+              reviewers: reviewers.slice(0, 2) // 최대 2명의 리뷰어
+            });
+          } 
