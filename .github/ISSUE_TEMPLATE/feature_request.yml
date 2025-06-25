@@ -1,0 +1,79 @@
+name: ✨ 기능 요청
+description: 새로운 기능을 제안해주세요!
+title: "[Feature] "
+labels: ["enhancement", "feature", "needs-triage"]
+assignees:
+  - DainoJung
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        새로운 기능을 제안해주셔서 감사합니다! 자세한 내용을 알려주시면 검토해보겠습니다.
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: ✨ 기능 설명
+      description: 제안하고 싶은 기능에 대해 명확하고 간결하게 설명해주세요.
+      placeholder: 어떤 기능을 원하시나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-solution
+    attributes:
+      label: 🎯 해결하려는 문제
+      description: 이 기능이 어떤 문제를 해결하거나 어떤 개선을 제공하나요?
+      placeholder: 현재 어떤 불편함이나 제한사항이 있나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: 💡 제안하는 해결책
+      description: 이 문제를 어떻게 해결하고 싶으신가요?
+      placeholder: 구체적인 해결 방안을 설명해주세요...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔀 대안
+      description: 고려해본 다른 해결책이나 기능이 있나요?
+      placeholder: 다른 방법들도 설명해주세요...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 📊 우선순위
+      description: 이 기능의 중요도는 어느 정도인가요?
+      options:
+        - "낮음 - 있으면 좋겠지만 급하지 않음"
+        - "보통 - 적당한 시기에 구현되면 좋겠음"
+        - "높음 - 빠른 시일 내에 필요함"
+        - "긴급 - 매우 중요하고 시급함"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📎 추가 정보
+      description: 스크린샷, 목업, 또는 기능에 대한 추가 컨텍스트를 제공해주세요.
+      placeholder: 참고 자료나 예시가 있다면 첨부해주세요...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ 체크리스트
+      description: 기능 요청을 제출하기 전에 다음 사항들을 확인해주세요.
+      options:
+        - label: 기존 이슈를 검색했고, 동일한 기능이 요청되지 않았습니다.
+          required: true
+        - label: 이 기능이 프로젝트의 범위와 목적에 맞다고 생각합니다.
+          required: true
+        - label: 기능에 대해 충분히 구체적으로 설명했습니다.
+          required: true 

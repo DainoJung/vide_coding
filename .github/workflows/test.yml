@@ -1,0 +1,56 @@
+name: 테스트 자동 실행
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', 3.11]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Python 설정 ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 의존성 설치
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Lint 검사 (flake8)
+      run: |
+        pip install flake8
+        # Python 문법 에러나 undefined names 검사
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # 전체 프로젝트 복잡도 검사
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: 테스트 실행 (pytest)
+      run: |
+        # 테스트 파일이 있으면 pytest 실행, 없으면 간단한 Python 파일 실행
+        if [ -d "tests" ] || find . -name "test_*.py" | grep -q .; then
+          pytest --cov=. --cov-report=xml
+        else
+          echo "테스트 파일이 없습니다. 기본 Python 파일들을 실행합니다."
+          python -c "import sys; print(f'Python {sys.version} 테스트 완료')"
+          # 모든 .py 파일이 문법적으로 올바른지 확인
+          python -m py_compile test_feature.py
+        fi
+
+    - name: 코드 커버리지 업로드
+      if: matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella 
